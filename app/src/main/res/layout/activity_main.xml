@@ -34,6 +34,22 @@
         android:backgroundTint="#2563EB"/>
 
     <Button
+        android:id="@+id/dueDateButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Choose Due Date (Optional)"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/selectedDueDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No due date selected"
+        android:textColor="#475569"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp" />
+
+    <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/addTaskButton"

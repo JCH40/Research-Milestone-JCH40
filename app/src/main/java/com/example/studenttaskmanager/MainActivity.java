@@ -10,13 +10,15 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.graphics.Paint;
+import android.app.DatePickerDialog;
 
-import androidx.activity.EdgeToEdge;
+import java.util.ArrayList;
+import java.text.DateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.lifecycle.ViewTreeLifecycleOwner;
 
 import java.util.ArrayList;
 
@@ -25,7 +27,9 @@ public class MainActivity extends AppCompatActivity {
     private EditText taskInput;
     private TextView taskCounter;
     private LinearLayout taskContainer;
+    private TextView selectedDueDate;
     private final ArrayList<CheckBox> taskChecks = new ArrayList<>();
+    private Date selectedDate = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,16 +38,51 @@ public class MainActivity extends AppCompatActivity {
 
         taskInput = findViewById(R.id.taskInput);
         taskCounter = findViewById(R.id.taskCounter);
+        selectedDueDate = findViewById(R.id.selectedDueDate);
         taskContainer = findViewById(R.id.taskContainer);
 
         Button addTaskButton = findViewById(R.id.addTaskButton);
+        Button dueDateButton = findViewById(R.id.dueDateButton);
+
         addTaskButton.setOnClickListener(v -> addTask());
+        dueDateButton.setOnClickListener(v -> chooseDueDate());
         updateCounter();
     }
 
+    private void chooseDueDate() {
+        Calendar calendar = Calendar.getInstance();
+        if (selectedDate != null) {
+            calendar.setTime(selectedDate);
+        }
+
+        DatePickerDialog datePicker = new DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> {
+                    Calendar chosenDate = Calendar.getInstance();
+                    chosenDate.set(year, month, dayOfMonth, 12, 0, 0);
+                    chosenDate.set(Calendar.MILLISECOND, 0);
+
+                    selectedDate = chosenDate.getTime();
+
+                    DateFormat dateFormat =
+                            DateFormat.getDateInstance(
+                                    DateFormat.MEDIUM, Locale.getDefault());
+
+                    selectedDueDate.setText(
+                            "Due date: " + dateFormat.format(selectedDate));
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+        datePicker.getDatePicker().setMinDate(
+                System.currentTimeMillis() - 1000);
+        datePicker.show();
+    }
+
     private void addTask() {
-        String title = taskInput.getText()
-                .toString().trim();
+        String title = taskInput.getText().toString().trim();
+
         if (title.isEmpty()) {
             taskInput.setError("Please enter a task");
             return;
@@ -54,32 +93,52 @@ public class MainActivity extends AppCompatActivity {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(4, 8, 4, 8);
 
+        LinearLayout taskDetails = new LinearLayout(this);
+        taskDetails.setOrientation(LinearLayout.VERTICAL);
+        taskDetails.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1
+                )
+        );
+
         CheckBox checkBox = new CheckBox(this);
         checkBox.setText(title);
         checkBox.setTextSize(16);
-        checkBox.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1
-        ));
+
+        taskDetails.addView(checkBox);
+
+        if (selectedDate != null) {
+            TextView dueDateText = new TextView(this);
+
+            DateFormat dateFormat =
+                    DateFormat.getDateInstance(
+                            DateFormat.MEDIUM, Locale.getDefault());
+
+            dueDateText.setText("Due: " + dateFormat.format(selectedDate));
+            dueDateText.setTextSize(13);
+            dueDateText.setPadding(48, 0, 0, 0);
+
+            taskDetails.addView(dueDateText);
+        }
 
         Button deleteButton = new Button(this);
         deleteButton.setText("Delete");
 
-        checkBox.setOnCheckedChangeListener(
-                (button, checked) -> {
-                    if (checked) {
-                        checkBox.setPaintFlags(
-                                checkBox.getPaintFlags()
-                                        | Paint.STRIKE_THRU_TEXT_FLAG
-                        );
-                    } else {
-                        checkBox.setPaintFlags(
-                                checkBox.getPaintFlags()
-                                        & ~Paint.STRIKE_THRU_TEXT_FLAG
-                        );
-                    }
+        checkBox.setOnCheckedChangeListener((button, checked) -> {
+            if (checked) {
+                checkBox.setPaintFlags(
+                        checkBox.getPaintFlags()
+                                | Paint.STRIKE_THRU_TEXT_FLAG);
+            } else {
+                checkBox.setPaintFlags(
+                        checkBox.getPaintFlags()
+                                & ~Paint.STRIKE_THRU_TEXT_FLAG);
+            }
 
-                    updateCounter();
-                }
-        );
+            updateCounter();
+        });
 
         deleteButton.setOnClickListener(v -> {
             taskContainer.removeView(row);
@@ -87,13 +146,16 @@ public class MainActivity extends AppCompatActivity {
             updateCounter();
         });
 
-        row.addView(checkBox);
+        row.addView(taskDetails);
         row.addView(deleteButton);
 
         taskContainer.addView(row);
         taskChecks.add(checkBox);
 
         taskInput.setText("");
+        selectedDate = null;
+        selectedDueDate.setText("No due date selected");
+
         updateCounter();
 
         Toast.makeText(this, "Task added!", Toast.LENGTH_SHORT).show();
